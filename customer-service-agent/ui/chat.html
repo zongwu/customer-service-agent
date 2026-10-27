@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能客服 Demo</title>
+<style>
+  /* ============================================================
+     设计令牌 —— 取自 modao-export/02-zendesk-benchmark 色板
+     主色 #1B7578（柔和青绿）、警示红 #AD2634、强调橙 #D9830F
+     均沿用基准稿，保证与设计稿视觉一致。
+     ============================================================ */
+  :root {
+    --brand:        #1B7578;
+    --brand-dark:   #145E60;
+    --brand-light:  #E7F2F2;
+    --brand-mid:    #C9E3E3;
+
+    --bg:           #F7F8F9;
+    --surface:      #FFFFFF;
+    --border:       #E0E3E6;
+
+    --text:         #20262B;
+    --text-mid:     #5C666E;
+    --text-soft:    #8A9299;
+
+    --danger:       #AD2634;
+    --danger-bg:    #FBEEEF;
+
+    --radius:       14px;
+    --max-w:        600px;
+
+    --shadow-sm:    0 1px 2px rgba(32, 38, 43, .05);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- 布局：最大 600px 居中 ---------- */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: var(--max-w);
+    margin: 0 auto;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .app { border-left: none; border-right: none; }
+  }
+
+  /* ---------- 顶部标题栏 ---------- */
+  .header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-logo {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    background: var(--brand-light);
+    border: 1px solid var(--brand-mid);
+    border-radius: 11px;
+  }
+  .header-logo svg {
+    width: 20px;
+    height: 20px;
+    color: var(--brand);
+  }
+
+  .header-text { flex: 1; min-width: 0; }
+
+  .header-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    line-height: 1.3;
+  }
+
+  .header-sub {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--text-soft);
+    transition: background .25s;
+  }
+  .status-dot.online { background: #0A6A46; }
+  .status-dot.busy   { background: #D9830F; }
+  .status-dot.error  { background: var(--danger); }
+
+  .header-clear {
+    flex-shrink: 0;
+    padding: 7px 13px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-mid);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .header-clear:hover {
+    color: var(--brand);
+    border-color: var(--brand-mid);
+    background: var(--brand-light);
+  }
+
+  /* ---------- 消息区 ---------- */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 22px 20px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  .messages::-webkit-scrollbar-thumb:hover { background: var(--text-soft); }
+
+  /* ---------- 消息行 ---------- */
+  .row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: rise .26s cubic-bezier(.22,.61,.36,1);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .row { animation: none; }
+    .messages { scroll-behavior: auto; }
+  }
+
+  .row.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    border-radius: 9px;
+    user-select: none;
+  }
+  .row.bot  .avatar { background: var(--brand-light); border: 1px solid var(--brand-mid); }
+  .row.user .avatar { background: #EDF0F2; border: 1px solid var(--border); }
+
+  /* 头像用内联 SVG 而非 emoji：emoji 在不同系统字体回退差异大
+     （Windows 上 📎 会退化成 ¶ 样式），SVG 跨平台渲染完全一致，
+     也更贴合设计稿的几何克制感。 */
+  .avatar svg {
+    width: 17px;
+    height: 17px;
+    display: block;
+  }
+  .row.bot  .avatar svg { color: var(--brand); }
+  .row.user .avatar svg { color: var(--text-mid); }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-width: 78%;
+    min-width: 0;
+  }
+  .row.user .col { align-items: flex-end; }
+
+  .bubble {
+    padding: 11px 15px;
+    border-radius: var(--radius);
+    font-size: 16px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* 机器人：白底 + 描边，弱化容器只留结构（Vignelli 的克制感） */
+  .row.bot .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    color: var(--text);
+  }
+
+  /* 用户：品牌浅底 + 品牌色描边 */
+  .row.user .bubble {
+    background: var(--brand-light);
+    border: 1px solid var(--brand-mid);
+    border-top-right-radius: 4px;
+    color: var(--text);
+  }
+
+  /* ---------- 来源标注（小字） ---------- */
+  .sources {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-soft);
+    padding: 0 4px;
+    word-break: break-word;
+  }
+  /* 标签与内容各自成块：flex item 默认会被压缩，窄屏下中文会被压成竖排。
+     改成两个独立行容器，标签固定不缩，来源文本自然换行。 */
+  .sources .src-label {
+    flex-shrink: 0;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .sources .src-text {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .sources svg {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    margin-top: 4px;
+    color: var(--text-soft);
+  }
+
+  /* ---------- 转人工提示 ---------- */
+  .handoff {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 5px 11px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--danger);
+    background: var(--danger-bg);
+    border: 1px solid #F0D4D7;
+    border-radius: 999px;
+  }
+  .handoff svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--danger);
+  }
+
+  /* ---------- 时间戳 ---------- */
+  .time {
+    font-size: 11.5px;
+    color: var(--text-soft);
+    padding: 0 4px;
+  }
+
+  /* ---------- 打字指示 ---------- */
+  .typing { display: flex; gap: 4px; padding: 4px 0; }
+  .typing span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brand-mid);
+    animation: blink 1.3s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: .18s; }
+  .typing span:nth-child(3) { animation-delay: .36s; }
+  @keyframes blink {
+    0%, 60%, 100% { opacity: .3; transform: translateY(0); }
+    30%           { opacity: 1;  transform: translateY(-3px); }
+  }
+
+  /* ---------- 错误提示 ---------- */
+  .error-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 5px 11px;
+    font-size: 13px;
+    color: var(--danger);
+    background: var(--danger-bg);
+    border: 1px solid #F0D4D7;
+    border-radius: 999px;
+  }
+
+  /* ---------- 底部输入区 ---------- */
+  .composer {
+    flex-shrink: 0;
+    padding: 14px 20px 18px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .quick-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 11px;
+  }
+
+  .chip {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-mid);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .chip:hover {
+    color: var(--brand);
+    background: var(--brand-light);
+    border-color: var(--brand-mid);
+  }
+
+  .input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 8px 8px 8px 15px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input-bar:focus-within {
+    border-color: var(--brand-mid);
+    box-shadow: 0 0 0 3px rgba(27, 117, 120, .08);
+  }
+
+  #input {
+    flex: 1;
+    min-width: 0;
+    max-height: 120px;
+    padding: 8px 0;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    overflow-y: auto;
+  }
+  #input::placeholder { color: var(--text-soft); }
+
+  #send {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+    color: #fff;
+    background: var(--brand);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .18s, transform .12s, opacity .18s;
+  }
+  #send:hover:not(:disabled)  { background: var(--brand-dark); }
+  #send:active:not(:disabled) { transform: scale(.94); }
+  #send:disabled { opacity: .42; cursor: not-allowed; }
+
+  .hint {
+    margin-top: 9px;
+    font-size: 12px;
+    color: var(--text-soft);
+    text-align: center;
+  }
+  .hint kbd {
+    padding: 1px 5px;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text-mid);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  /* ---------- 空状态 ---------- */
+  .empty {
+    margin: auto;
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-soft);
+  }
+  .empty-icon {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto 12px;
+    display: grid;
+    place-items: center;
+    color: var(--brand-mid);
+  }
+  .empty-icon svg { width: 34px; height: 34px; }
+  .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-mid);
+    margin-bottom: 5px;
+  }
+  .empty-desc { font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 顶部标题栏 -->
+  <header class="header">
+    <div class="header-logo" id="headerLogo" aria-hidden="true"></div>
+    <div class="header-text">
+      <div class="header-title">智能客服 Demo</div>
+      <div class="header-sub">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">未连接</span>
+      </div>
+    </div>
+    <button class="header-clear" id="clearBtn" type="button">清空</button>
+  </header>
+
+  <!-- 消息展示区（空状态由脚本构建，见 buildEmptyState） -->
+  <main class="messages" id="messages"></main>
+
+  <!-- 底部输入区 -->
+  <footer class="composer">
+    <div class="quick-row">
+      <button class="chip" type="button" data-q="如何重置密码？">如何重置密码？</button>
+      <button class="chip" type="button" data-q="订单发货后多久能到？">订单多久能到？</button>
+      <button class="chip" type="button" data-q="如何申请退款？">如何申请退款？</button>
+      <button class="chip" type="button" data-q="会员有哪些权益？">会员有哪些权益？</button>
+    </div>
+
+    <div class="input-bar">
+      <textarea id="input" rows="1" placeholder="输入你的问题，Enter 发送…"></textarea>
+      <button id="send" type="button" title="发送" aria-label="发送">➤</button>
+    </div>
+
+    <div class="hint"><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd>+<kbd>Enter</kbd> 换行</div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var API_URL = "http://localhost:8000/chat";
+  var SESSION_ID = "demo-session";
+  var REQUEST_TIMEOUT = 30000;   // 30s 墙钟上限，超时主动中断，避免界面永久卡在等待态
+
+  var messagesEl = document.getElementById("messages");
+  var inputEl    = document.getElementById("input");
+  var sendBtn    = document.getElementById("send");
+  var clearBtn   = document.getElementById("clearBtn");
+  var statusDot  = document.getElementById("statusDot");
+  var statusText = document.getElementById("statusText");
+
+  var busy = false;          // 防止重复提交：连点发送会打出多条重复消息
+  var controller = null;     // 当前请求的 AbortController
+
+  /* ---------------- 图标 ---------------- */
+
+  // 内联 SVG 图标：避免 emoji 的跨平台字体回退问题
+  var ICONS = {
+    // 机器人：客服耳机
+    bot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+         '<path d="M3 14v-2a9 9 0 0 1 18 0v2"/>' +
+         '<path d="M21 15a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2Z"/>' +
+         '<path d="M3 15a2 2 0 0 0 2 2h1v-5H5a2 2 0 0 0-2 2Z"/>' +
+         '<path d="M18 19v-1a2 2 0 0 0-2-2h-2v-2a5 5 0 0 0-5 5v2h9Z"/>' +
+         '</svg>',
+    // 用户：人形
+    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>' +
+          '<circle cx="12" cy="7" r="4"/>' +
+          '</svg>',
+    // 来源：回形针
+    paperclip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+               'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+               '<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>' +
+               '</svg>',
+    // 警告：三角感叹号
+    warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+             'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+             '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>' +
+             '<path d="M12 9v4"/><path d="M12 17h.01"/>' +
+             '</svg>',
+    // 对话：空状态
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/>' +
+          '</svg>'
+  };
+
+  // 头像/提示里的 SVG 是本文件内的静态常量，不含任何用户数据，
+  // 因此这里用 innerHTML 注入是安全的（用户与后端文本一律走 textContent）。
+  function setIcon(el, name) {
+    el.innerHTML = ICONS[name] || "";
+  }
+
+  /* ---------------- 工具函数 ---------------- */
+
+  function setStatus(state, text) {
+    statusDot.className = "status-dot" + (state ? " " + state : "");
+    statusText.textContent = text;
+  }
+
+  function scrollToBottom() {
+    // rAF 等布局完成后再滚，否则新节点还没撑开高度，滚动位置会停在旧底部
+    requestAnimationFrame(function () {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+  }
+
+  function nowLabel() {
+    var d = new Date();
+    var p = function (n) { return n < 10 ? "0" + n : String(n); };
+    return p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function removeEmpty() {
+    var el = document.getElementById("emptyState");
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+
+  function buildEmptyState() {
+    // 用 DOM API 逐层构建而非 innerHTML 字符串拼接：
+    // 彻底消除「任何 innerHTML 路径都可能被注入」的类别的风险，
+    // 后续若有人在此插入动态内容也不会引入 XSS。
+    var el = document.createElement("div");
+    el.className = "empty";
+    el.id = "emptyState";
+
+    var icon = document.createElement("div");
+    icon.className = "empty-icon";
+    setIcon(icon, "chat");
+    icon.setAttribute("aria-hidden", "true");
+
+    var title = document.createElement("div");
+    title.className = "empty-title";
+    title.textContent = "开始咨询";
+
+    var desc = document.createElement("div");
+    desc.className = "empty-desc";
+    desc.textContent = "试试下面的常见问题，或直接输入你的疑问";
+
+    el.appendChild(icon);
+    el.appendChild(title);
+    el.appendChild(desc);
+    return el;
+  }
+
+  /* ---------------- 渲染 ---------------- */
+
+  // 用 textContent 而非 innerHTML 承载用户输入与后端文本：
+  // 一条 "<img onerror=...>" 就能变成 XSS，纯文本插入才是安全边界。
+  function addMessage(role, text, options) {
+    options = options || {};
+    removeEmpty();
+
+    var row = document.createElement("div");
+    row.className = "row " + role;
+
+    var avatar = document.createElement("div");
+    avatar.className = "avatar";
+    setIcon(avatar, role === "user" ? "user" : "bot");
+    avatar.setAttribute("aria-hidden", "true");
+
+    var col = document.createElement("div");
+    col.className = "col";
+
+    var bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    col.appendChild(bubble);
+
+    // 来源标注
+    if (options.sources && options.sources.length) {
+      var src = document.createElement("div");
+      src.className = "sources";
+
+      var icon = document.createElement("span");
+      setIcon(icon, "paperclip");
+      src.appendChild(icon);
+
+      var label = document.createElement("span");
+      label.className = "src-label";
+      label.textContent = "来源：";
+      src.appendChild(label);
+
+      // 后端可能给字符串数组，也可能给对象数组，两种都兜住
+      var text = document.createElement("span");
+      text.className = "src-text";
+      for (var i = 0; i < options.sources.length; i++) {
+        var s = options.sources[i];
+        if (i > 0) text.appendChild(document.createTextNode("、"));
+        text.appendChild(document.createTextNode(
+          (s && typeof s === "object") ? (s.source || s.text || JSON.stringify(s)) : String(s)
+        ));
+      }
+      src.appendChild(text);
+      col.appendChild(src);
+    }
+
+    // 转人工提示
+    if (options.needHuman) {
+      var handoff = document.createElement("div");
+      handoff.className = "handoff";
+      var hIcon = document.createElement("span");
+      setIcon(hIcon, "warning");
+      handoff.appendChild(hIcon);
+      handoff.appendChild(document.createTextNode("已转接人工客服"));
+      col.appendChild(handoff);
+    }
+
+    // 错误提示
+    if (options.error) {
+      var err = document.createElement("div");
+      err.className = "error-note";
+      var eIcon = document.createElement("span");
+      setIcon(eIcon, "warning");
+      err.appendChild(eIcon);
+      err.appendChild(document.createTextNode(options.error));
+      col.appendChild(err);
+    }
+
+    var time = document.createElement("div");
+    time.className = "time";
+    time.textContent = nowLabel();
+    col.appendChild(time);
+
+    row.appendChild(avatar);
+    row.appendChild(col);
+    messagesEl.appendChild(row);
+    scrollToBottom();
+    return row;
+  }
+
+  function addTyping() {
+    removeEmpty();
+
+    var row = document.createElement("div");
+    row.className = "row bot";
+    row.id = "typingRow";
+
+    var avatar = document.createElement("div");
+    avatar.className = "avatar";
+    setIcon(avatar, "bot");
+
+    var col = document.createElement("div");
+    col.className = "col";
+
+    var bubble = document.createElement("div");
+    bubble.className = "bubble";
+    var dots = document.createElement("div");
+    dots.className = "typing";
+    for (var i = 0; i < 3; i++) dots.appendChild(document.createElement("span"));
+    bubble.appendChild(dots);
+    col.appendChild(bubble);
+
+    row.appendChild(avatar);
+    row.appendChild(col);
+    messagesEl.appendChild(row);
+    scrollToBottom();
+    return row;
+  }
+
+  function removeTyping() {
+    var row = document.getElementById("typingRow");
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+  }
+
+  /* ---------------- 请求 ---------------- */
+
+  function send(text) {
+    if (busy) return;
+
+    var message = (text !== undefined ? text : inputEl.value).trim();
+    if (!message) return;
+
+    busy = true;
+    sendBtn.disabled = true;
+    setStatus("busy", "思考中…");
+
+    addMessage("user", message);
+    inputEl.value = "";
+    autoGrow();
+    addTyping();
+
+    controller = new AbortController();
+    var timer = setTimeout(function () {
+      if (controller) controller.abort();
+    }, REQUEST_TIMEOUT);
+
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: message, session_id: SESSION_ID }),
+      signal: controller.signal
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (t) {
+            throw new Error("HTTP " + res.status + (t ? " · " + t.slice(0, 120) : ""));
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        removeTyping();
+
+        // 兼容多种响应结构：answer / reply / message / content
+        var reply = data.answer || data.reply || data.message || data.content || "";
+        if (!reply) reply = "抱歉，我暂时无法回答这个问题，已为您转接人工客服。";
+
+        addMessage("bot", String(reply), {
+          sources:   data.sources || data.source || [],
+          needHuman: data.need_human === true || data.needHuman === true
+        });
+
+        setStatus("online", "在线");
+        busy = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      })
+      .catch(function (err) {
+        removeTyping();
+
+        var isAbort = err && (err.name === "AbortError" || /abort/i.test(err.message || ""));
+        var rawMsg = (err && err.message) || "未知错误";
+
+        // CORS 被拦截时 fetch 的 TypeError 信息是 "Failed to fetch"，
+        // 真实原因在浏览器控制台里。给用户一句可执行的说明，
+        // 而不是让人对着 "Failed to fetch" 猜。
+        var msg;
+        if (isAbort) {
+          msg = "请求超时（" + Math.round(REQUEST_TIMEOUT / 1000) + " 秒无响应），请稍后重试";
+        } else if (/failed to fetch|networkerror|load failed/i.test(rawMsg)) {
+          msg = "无法连接到 http://localhost:8000，请确认后端已启动；"
+              + "若后端已启动仍失败，多为浏览器 CORS 拦截，"
+              + "请改用本地服务器打开本页（见 README）";
+        } else {
+          msg = "无法连接服务（" + rawMsg + "），请确认后端已启动";
+        }
+
+        addMessage("bot", "抱歉，服务暂时无法访问。", { error: msg });
+        setStatus("error", "连接异常");
+        busy = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      })
+      .then(function () {
+        clearTimeout(timer);
+        controller = null;
+      });
+  }
+
+  /* ---------------- 后端健康探测 ---------------- */
+
+  // 页面一打开就知道后端在不在，比发一条消息才发现连不上要好。
+  // 用 GET 探测根路径：即使后端没实现 /health，任何响应都说明"服务活着"。
+  function probeBackend() {
+    var base = API_URL.replace(/\/chat$/, "");
+    var timer = setTimeout(function () {
+      setStatus("error", "未连接");
+    }, 4000);
+
+    fetch(base + "/", { method: "GET" })
+      .then(function () {
+        clearTimeout(timer);
+        setStatus("online", "在线");
+      })
+      .catch(function () {
+        clearTimeout(timer);
+        // 探测失败不代表服务一定挂了（可能没有根路由、可能有 CORS 限制），
+        // 措辞留有余地：提示"未连接"但不断言"服务未启动"。
+        setStatus("", "未连接");
+      });
+  }
+
+  /* ---------------- 事件绑定 ---------------- */
+
+  // Enter 发送、Shift+Enter 换行
+  inputEl.addEventListener("keydown", function (e) {
+    // isComposing 守卫：中文输入法选词确认时按 Enter 会误发送
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  // 输入框随内容增高，但不超过 max-height
+  function autoGrow() {
+    inputEl.style.height = "auto";
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+  }
+  inputEl.addEventListener("input", autoGrow);
+
+  sendBtn.addEventListener("click", function () { send(); });
+
+  // 快捷问题
+  var chips = document.querySelectorAll(".chip");
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener("click", function (e) {
+      send(e.currentTarget.getAttribute("data-q"));
+    });
+  }
+
+  // 清空
+  clearBtn.addEventListener("click", function () {
+    if (busy && controller) controller.abort();
+    messagesEl.innerHTML = "";
+    messagesEl.appendChild(buildEmptyState());
+    setStatus("", "未连接");
+    busy = false;
+    sendBtn.disabled = false;
+    inputEl.focus();
+  });
+
+  // 初始状态
+  setIcon(document.getElementById("headerLogo"), "bot");
+  messagesEl.appendChild(buildEmptyState());
+  autoGrow();
+  inputEl.focus();
+  probeBackend();
+})();
+</script>
+</body>
+</html>

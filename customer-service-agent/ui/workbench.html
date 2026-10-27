@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>潮汐客服台 · 坐席工作台</title>
+<style>
+/* ============================================================
+   设计令牌 —— 取自 modao-export/02-zendesk-benchmark 色板
+   主色 #1B7578（青绿）、#AD2634 红、#D9830F 橙、#0A6A46 绿
+   版式：顶栏 86px；侧栏 / 队列 / 聊天 / AI 面板 四栏
+   字号 12-16px（紧凑专业界面，非客服聊天页的大字号）
+   ============================================================ */
+:root {
+  --brand:       #1B7578;
+  --brand-dark:  #145E60;
+  --brand-mid:   #C9E3E3;
+  --brand-light: #E7F2F2;
+
+  --bg:          #F1F3F4;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7F8F9;
+  --border:      #E0E3E6;
+  --border-2:    #CCD1D6;
+
+  --text:        #20262B;
+  --text-mid:    #5C666E;
+  --text-soft:   #8A9299;
+
+  --red:         #AD2634;
+  --red-bg:      #FBEEEF;
+  --red-bd:      #F0D4D7;
+  --orange:      #D9830F;
+  --orange-bg:   #FBF3E7;
+  --orange-bd:   #F2DFC2;
+  --green:       #0A6A46;
+  --green-bg:    #E8F3EE;
+
+  --topbar-h:    56px;
+  --nav-w:       248px;
+  --queue-w:     316px;
+  --ai-w:        336px;
+
+  --shadow-sm:   0 1px 2px rgba(32,38,43,.05);
+  --shadow-md:   0 2px 8px rgba(32,38,43,.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  min-width: 1180px;   /* 坐席工作台是桌面工具，窄屏横向滚动而非挤压 */
+}
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-soft); }
+::-webkit-scrollbar-track { background: transparent; }
+
+svg { display: block; }
+
+/* ============ 顶栏 ============ */
+.topbar {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.brand-mark {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  background: var(--brand);
+  border-radius: 8px;
+}
+.brand-mark svg { width: 17px; height: 17px; color: #fff; }
+.brand-name { font-size: 14px; font-weight: 700; letter-spacing: .2px; }
+.brand-sub  { font-size: 11px; color: var(--text-soft); letter-spacing: .4px; }
+
+.search {
+  flex: 1; max-width: 380px;
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-soft);
+}
+.search svg { width: 14px; height: 14px; flex-shrink: 0; }
+.search input {
+  flex: 1; min-width: 0;
+  font: inherit; font-size: 13px;
+  color: var(--text);
+  background: none; border: none; outline: none;
+}
+.search input::placeholder { color: var(--text-soft); }
+.search kbd {
+  font: inherit; font-size: 11px;
+  padding: 1px 5px;
+  color: var(--text-mid);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.spacer { flex: 1; }
+
+.toggle {
+  display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0;
+  font-size: 12px; color: var(--text-mid);
+}
+.switch {
+  width: 34px; height: 19px;
+  padding: 2px;
+  background: var(--border-2);
+  border: none; border-radius: 999px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.switch.on { background: var(--brand); }
+.switch i {
+  display: block; width: 15px; height: 15px;
+  background: #fff; border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s;
+}
+.switch.on i { transform: translateX(15px); }
+
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+  padding: 5px 11px;
+  font-size: 12px; font-weight: 600;
+  color: var(--green);
+  background: var(--green-bg);
+  border-radius: 999px;
+}
+.status-pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+.agent-chip {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+}
+.agent-avatar {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  background: var(--brand);
+  border-radius: 8px;
+}
+.agent-info { line-height: 1.3; }
+.agent-name { font-size: 12.5px; font-weight: 600; }
+.agent-role { font-size: 11px; color: var(--text-soft); }
+
+/* ============ 主区 ============ */
+.main {
+  height: calc(100% - var(--topbar-h));
+  display: flex;
+}
+
+/* ---- 侧栏 ---- */
+.nav {
+  width: var(--nav-w); flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.nav-label {
+  padding: 14px 16px 7px;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-soft);
+  letter-spacing: .6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px;
+  margin: 1px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-mid);
+  border: none; background: none;
+  font: inherit; text-align: left;
+  width: calc(100% - 16px);
+  transition: background .15s, color .15s;
+}
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-item.active { background: var(--brand-light); color: var(--brand); font-weight: 600; }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.nav-item .num { margin-left: auto; font-size: 11px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.nav-item.active .num { color: var(--brand); }
+
+.nav-foot { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
+.channels { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.channel {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-mid);
+}
+.channel i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+.channel .cnt { margin-left: auto; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mode-tag {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 9px;
+  font-size: 11.5px; font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-light);
+  border-radius: 7px;
+}
+.mode-tag svg { width: 13px; height: 13px; }
+
+/* ---- 会话队列 ---- */
+.queue {
+  width: var(--queue-w); flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.panel-head { padding: 13px 14px 0; flex-shrink: 0; }
+.panel-title { display: flex; align-items: baseline; gap: 8px; }
+.panel-title h2 { font-size: 14px; font-weight: 700; }
+.panel-title span { font-size: 11.5px; color: var(--text-soft); }
+
+.tabs {
+  display: flex; gap: 2px;
+  margin-top: 11px;
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  padding: 7px 9px;
+  font: inherit; font-size: 12px;
+  color: var(--text-mid);
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--brand); font-weight: 600; border-bottom-color: var(--brand); }
+.tab .cnt {
+  margin-left: 4px;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+.tab.active .cnt { color: var(--brand); }
+
+.cards { flex: 1; overflow-y: auto; padding: 6px; }
+
+.card {
+  display: flex; gap: 9px;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background .14s, border-color .14s;
+}
+.card:hover { background: var(--surface-2); }
+.card.active { background: var(--brand-light); border-color: var(--brand-mid); }
+.card.removing { animation: fadeOut .28s forwards; }
+@keyframes fadeOut { to { opacity: 0; transform: translateX(-14px); } }
+
+.card-avatar {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+  background: var(--text-mid);
+  border-radius: 8px;
+}
+.card-body { flex: 1; min-width: 0; }
+.card-row { display: flex; align-items: baseline; gap: 6px; }
+.card-name { font-size: 13px; font-weight: 600; }
+.card-wait { margin-left: auto; font-size: 11px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.card-topic {
+  font-size: 12px; color: var(--text-mid);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+.tag {
+  padding: 1px 6px;
+  font-size: 11px; font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-light);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.tag.warn { color: var(--orange); background: var(--orange-bg); }
+.tag.bad  { color: var(--red);    background: var(--red-bg); }
+
+.sla { font-size: 11px; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.sla.warn { color: var(--orange); }
+.sla.bad  { color: var(--red); }
+
+.tide { display: flex; align-items: center; gap: 4px; margin-left: auto; font-size: 11px; color: var(--text-soft); }
+.tide-bar { width: 26px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.tide-bar i { display: block; height: 100%; border-radius: 2px; }
+.tide-bar i.ok   { background: var(--green); }
+.tide-bar i.warn { background: var(--orange); }
+.tide-bar i.bad  { background: var(--red); }
+
+/* ---- 聊天区 ---- */
+.chat { flex: 1; min-width: 380px; display: flex; flex-direction: column; background: var(--surface-2); }
+
+.chat-head {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-head .who { line-height: 1.35; }
+.chat-head .who b { font-size: 14px; }
+.chat-head .who small { display: flex; gap: 7px; margin-top: 1px; font-size: 11.5px; color: var(--text-soft); }
+.vip {
+  padding: 1px 6px;
+  font-size: 11px; font-weight: 700; color: #fff;
+  background: var(--orange);
+  border-radius: 4px;
+}
+.btn-ghost {
+  padding: 6px 11px;
+  font: inherit; font-size: 12px;
+  color: var(--text-mid);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-ghost:hover { color: var(--brand); border-color: var(--brand-mid); background: var(--brand-light); }
+
+.thread { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 13px; }
+
+.sep { display: flex; align-items: center; gap: 10px; margin: 3px 0; }
+.sep::before, .sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.sep span { font-size: 11px; color: var(--text-soft); }
+
+.sys-msg {
+  align-self: center;
+  max-width: 80%;
+  padding: 5px 12px;
+  font-size: 11.5px; color: var(--text-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-align: center;
+}
+
+.msg { display: flex; gap: 8px; max-width: 76%; }
+.msg.me { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  background: var(--text-mid); border-radius: 7px;
+}
+.msg.me .msg-avatar { background: var(--brand); }
+.msg-col { min-width: 0; }
+.bubble {
+  padding: 8px 12px;
+  font-size: 13px; line-height: 1.55;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-top-left-radius: 3px;
+  word-break: break-word; white-space: pre-wrap;
+  box-shadow: var(--shadow-sm);
+}
+.msg.me .bubble {
+  background: var(--brand-light);
+  border-color: var(--brand-mid);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 3px;
+}
+.bubble.draft {
+  background: #FFF8E7;
+  border-color: var(--orange-bd);
+  border-top-left-radius: 12px;
+}
+.draft-label {
+  display: flex; align-items: center; gap: 5px;
+  margin-bottom: 4px;
+  font-size: 11px; font-weight: 700; color: var(--orange);
+}
+.draft-label svg { width: 12px; height: 12px; }
+.draft-actions { display: flex; gap: 6px; margin-top: 8px; }
+.draft-actions button {
+  padding: 4px 10px;
+  font: inherit; font-size: 11.5px; font-weight: 600;
+  border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border-2);
+  background: var(--surface); color: var(--text-mid);
+  transition: all .15s;
+}
+.draft-actions button.primary {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+.draft-actions button.primary:hover { background: var(--brand-dark); }
+.draft-actions button:hover:not(.primary) { border-color: var(--text-soft); }
+.msg-meta { margin-top: 4px; font-size: 11px; color: var(--text-soft); }
+.msg.me .msg-meta { text-align: right; }
+
+/* 输入区 */
+.composer { flex-shrink: 0; padding: 10px 16px 14px; background: var(--surface); border-top: 1px solid var(--border); }
+.quick { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.quick button {
+  padding: 4px 10px;
+  font: inherit; font-size: 11.5px;
+  color: var(--text-mid);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.quick button:hover { color: var(--brand); background: var(--brand-light); border-color: var(--brand-mid); }
+
+.input-box {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  transition: border-color .18s, box-shadow .18s;
+}
+.input-box:focus-within { border-color: var(--brand-mid); box-shadow: 0 0 0 3px rgba(27,117,120,.07); }
+.input-tools {
+  display: flex; align-items: center; gap: 2px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.tool {
+  flex-shrink: 0;          /* 被压缩会导致按钮文字竖排（实测踩过） */
+  white-space: nowrap;
+  padding: 4px 7px;
+  display: flex; align-items: center; gap: 5px;
+  font: inherit; font-size: 11.5px;
+  color: var(--text-mid);
+  background: none; border: none; border-radius: 6px;
+  cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.tool:hover { background: var(--surface); color: var(--brand); }
+.tool svg { width: 13px; height: 13px; }
+.tool.ai-tool { color: var(--brand); font-weight: 600; }
+.tool.ai-tool:disabled { opacity: .5; cursor: not-allowed; }
+
+.input-row { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; }
+#replyInput {
+  flex: 1; min-width: 0; max-height: 96px;
+  font: inherit; font-size: 13px; line-height: 1.55;
+  color: var(--text);
+  background: none; border: none; outline: none; resize: none;
+}
+#replyInput::placeholder { color: var(--text-soft); }
+.btn-send {
+  flex-shrink: 0;
+  padding: 6px 15px;
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  color: #fff; background: var(--brand);
+  border: none; border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-send:hover:not(:disabled) { background: var(--brand-dark); }
+.btn-send:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ---- AI 面板 ---- */
+.ai {
+  width: var(--ai-w); flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+.ai-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ai-head svg { width: 15px; height: 15px; color: var(--brand); }
+.ai-head b { font-size: 13.5px; }
+.ai-head .conf { margin-left: auto; font-size: 11px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+
+.section { padding: 13px 14px; border-bottom: 1px solid var(--border); }
+.section h3 {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-soft);
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+
+.intent-row { margin-bottom: 9px; }
+.intent-row .top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.intent-row .top b { font-weight: 600; }
+.intent-row .top span { color: var(--text-mid); font-variant-numeric: tabular-nums; }
+.bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--brand-mid); border-radius: 3px; transition: width .3s; }
+.intent-row.top1 .bar i { background: var(--brand); }
+
+.kb-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 9px;
+  margin-bottom: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.kb-item .txt { flex: 1; min-width: 0; font-size: 12px; line-height: 1.4; }
+.kb-item button {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  font: inherit; font-size: 11px; font-weight: 600;
+  color: var(--brand);
+  background: var(--surface);
+  border: 1px solid var(--brand-mid);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.kb-item button:hover { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pf {
+  padding: 8px 9px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+.pf .k { font-size: 11px; color: var(--text-soft); }
+.pf .v { font-size: 13px; font-weight: 700; margin-top: 1px; font-variant-numeric: tabular-nums; }
+
+.gauge { display: flex; align-items: center; gap: 10px; }
+.gauge-num { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gauge-num.ok { color: var(--green); }
+.gauge-num.warn { color: var(--orange); }
+.gauge-num.bad { color: var(--red); }
+.gauge-bar { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.gauge-bar i { display: block; height: 100%; border-radius: 4px; transition: width .3s; }
+.gauge-txt { font-size: 11.5px; color: var(--text-mid); margin-top: 6px; }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.actions button {
+  padding: 7px;
+  font: inherit; font-size: 12px; font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-mid);
+  transition: all .15s;
+}
+.actions button:hover { border-color: var(--brand-mid); background: var(--brand-light); color: var(--brand); }
+.actions button.danger:hover { border-color: var(--red-bd); background: var(--red-bg); color: var(--red); }
+.actions button.wide { grid-column: span 2; }
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  padding: 9px 18px;
+  font-size: 12.5px; font-weight: 600;
+  color: #fff; background: var(--text);
+  border-radius: 9px;
+  box-shadow: var(--shadow-md);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.empty-chat {
+  flex: 1; display: grid; place-items: center;
+  color: var(--text-soft);
+}
+.empty-chat .in { text-align: center; }
+.empty-chat svg { width: 40px; height: 40px; margin: 0 auto 12px; color: var(--border-2); }
+.empty-chat p { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark" id="brandMark"></div>
+    <div>
+      <div class="brand-name">潮汐客服台</div>
+      <div class="brand-sub">TIDE DESK</div>
+    </div>
+  </div>
+
+  <div class="search">
+    <span id="searchIcon"></span>
+    <input id="globalSearch" placeholder="搜索客户、订单、会话…" autocomplete="off">
+    <kbd>/</kbd>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="toggle">
+    <span>AI 辅助</span>
+    <button class="switch on" id="aiToggle" aria-label="AI 辅助开关"><i></i></button>
+  </div>
+
+  <div class="status-pill"><i></i>接待中</div>
+
+  <div class="agent-chip">
+    <div class="agent-avatar">周</div>
+    <div class="agent-info">
+      <div class="agent-name">周敏</div>
+      <div class="agent-role">坐席 07</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- 侧栏 -->
+  <nav class="nav">
+    <div class="nav-label">导航</div>
+    <div id="navList"></div>
+    <div class="nav-foot">
+      <div class="channels">
+        <div class="channel"><i></i>网页<span class="cnt">3</span></div>
+        <div class="channel"><i style="background:#D9830F"></i>APP<span class="cnt">1</span></div>
+        <div class="channel"><i style="background:#0A6A46"></i>微信<span class="cnt">2</span></div>
+      </div>
+      <div class="mode-tag"><span id="modeIcon"></span>AI 模式</div>
+    </div>
+  </nav>
+
+  <!-- 会话队列 -->
+  <section class="queue">
+    <div class="panel-head">
+      <div class="panel-title">
+        <h2>会话队列</h2>
+        <span>按 SLA 风险排序</span>
+      </div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- 聊天区 -->
+  <section class="chat">
+    <div class="chat-head" id="chatHead"></div>
+    <div class="thread" id="thread"></div>
+    <div class="composer">
+      <div class="quick" id="quick"></div>
+      <div class="input-box">
+        <div class="input-tools">
+          <button class="tool" data-act="emoji"><span id="tEmoji"></span>表情</button>
+          <button class="tool" data-act="var"><span id="tVar"></span>变量</button>
+          <button class="tool" data-act="file"><span id="tFile"></span>附件</button>
+          <button class="tool" data-act="order"><span id="tOrder"></span>订单卡片</button>
+          <div class="spacer"></div>
+          <button class="tool ai-tool" id="aiDraft"><span id="tAi"></span>AI 续写</button>
+        </div>
+        <div class="input-row">
+          <textarea id="replyInput" rows="2" placeholder="输入回复内容，Enter 发送，Shift+Enter 换行"></textarea>
+          <button class="btn-send" id="btnSend">发送</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI 面板 -->
+  <aside class="ai">
+    <div class="ai-head">
+      <span id="aiHeadIcon"></span>
+      <b>AI 助手</b>
+      <span class="conf" id="aiConf"></span>
+    </div>
+    <div class="section">
+      <h3>意图识别</h3>
+      <div id="intentList"></div>
+    </div>
+    <div class="section">
+      <h3>知识库推荐</h3>
+      <div id="kbList"></div>
+    </div>
+    <div class="section">
+      <h3>客户画像</h3>
+      <div class="profile-grid" id="profileGrid"></div>
+    </div>
+    <div class="section">
+      <h3>潮位 · 情绪水位</h3>
+      <div class="gauge">
+        <div class="gauge-num" id="tideNum">—</div>
+        <div class="gauge-bar"><i id="tideBar"></i></div>
+      </div>
+      <div class="gauge-txt" id="tideTxt"></div>
+    </div>
+    <div class="section">
+      <h3>快捷操作</h3>
+      <div class="actions">
+        <button data-act="human">转人工</button>
+        <button data-act="ticket">创建工单</button>
+        <button data-act="resolve" class="wide">标记解决</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var API_URL = "http://localhost:8000/chat";
+  var REQUEST_TIMEOUT = 30000;
+
+  /* ============ 图标（内联 SVG，避免 emoji 跨平台字体回退） ============ */
+  var ICONS = {
+    logo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2Z"/><path d="M3 15a2 2 0 0 0 2 2h1v-5H5a2 2 0 0 0-2 2Z"/><path d="M18 19v-1a2 2 0 0 0-2-2h-2v-2a5 5 0 0 0-5 5v2h9Z"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2Z"/><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></svg>',
+    workbench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    ai: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="13" rx="3"/><path d="M9 11h.01M15 11h.01M9 15h6"/><path d="M12 3v3"/></svg>',
+    board: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2V5Z"/><path d="M8 7h7M8 11h7"/></svg>',
+    route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h6a3 3 0 0 1 3 3v6"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.9H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7.5l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3Z"/></svg>',
+    smile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>',
+    braces: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1"/><path d="M16 4h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1"/></svg>',
+    clip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>',
+    cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg>'
+  };
+
+  function setIcon(el, name) { el.innerHTML = ICONS[name] || ""; }
+
+  /* ============ 数据 ============ */
+  // mine=需我处理, ai=AI 转人工, follow=待跟进
+  var CUSTOMERS = [
+    { id:'c1', name:'王雪', ch:'网页', vip:'VIP2', wait:'2 分 14 秒', topic:'订单后没收到',
+      tag:'#物流异常', tagCls:'', sla:'SLA 剩 6 分', slaCls:'warn', tide:40,
+      flags:{mine:1}, conf:'0.41',
+      intent:[['物流',92],['退款',5],['其他',3]],
+      kb:['订单发货后多久能到？','物流轨迹查询指引'],
+      pf:{spend:'¥12,840', orders:'23', csat:'4.8', vip:'VIP2'},
+      msgs:[
+        {r:'sys', t:'会话由 AI 助手接待，已按 SLA 风险排序接入'},
+        {r:'cust', t:'你好，我上周下的订单到现在还没收到，物流一直显示在运输中', time:'10:22'},
+        {r:'me', t:'您好，很抱歉给您带来不便。我马上为您查询物流状态，请稍等一下～', time:'10:23'},
+        {r:'cust', t:'麻烦快一点，这个是送人的礼物，急用', time:'10:24'}
+      ]},
+    { id:'c2', name:'李明轩', ch:'APP', vip:'', wait:'47 秒', topic:'申请退款',
+      tag:'#退款', tagCls:'', sla:'SLA 剩 18 分', slaCls:'', tide:86,
+      flags:{ai:1}, conf:'0.62',
+      intent:[['退款',88],['物流',8],['其他',4]],
+      kb:['如何申请退款？','退款到账时效说明'],
+      pf:{spend:'¥3,260', orders:'7', csat:'4.9', vip:'VIP1'},
+      msgs:[
+        {r:'sys', t:'AI 置信度 0.62，已转人工复核'},
+        {r:'cust', t:'我想申请退款，商品和描述不符', time:'10:26'}
+      ]},
+    { id:'c3', name:'陈嘉怡', ch:'网页', vip:'', wait:'5 分 03 秒', topic:'发票抬头写错了',
+      tag:'#发票', tagCls:'warn', sla:'已超时', slaCls:'bad', tide:8,
+      flags:{mine:1}, conf:'0.33',
+      intent:[['其他',62],['退款',25],['物流',13]],
+      kb:['发票重开流程','抬头修改时效'],
+      pf:{spend:'¥8,120', orders:'15', csat:'4.2', vip:'VIP1'},
+      msgs:[
+        {r:'cust', t:'发票抬头写错了，能不能重新开一张？已经等很久了', time:'10:18'},
+        {r:'cust', t:'在吗？', time:'10:23'}
+      ]},
+    { id:'c4', name:'赵宇航', ch:'微信', vip:'', wait:'1 分 26 秒', topic:'优惠券没到账',
+      tag:'#营销', tagCls:'', sla:'SLA 剩 13 分', slaCls:'', tide:88,
+      flags:{follow:1}, conf:'0.78',
+      intent:[['其他',71],['退款',20],['物流',9]],
+      kb:['优惠券发放规则','活动权益查询'],
+      pf:{spend:'¥1,980', orders:'4', csat:'4.6', vip:'普通'},
+      msgs:[
+        {r:'cust', t:'活动说送的优惠券怎么还没到账？', time:'10:25'}
+      ]},
+    { id:'c5', name:'刘思远', ch:'网页', vip:'', wait:'3 分 11 秒', topic:'发货地址写错',
+      tag:'#地址修改', tagCls:'', sla:'SLA 剩 4 分', slaCls:'warn', tide:22,
+      flags:{mine:1}, conf:'0.49',
+      intent:[['物流',81],['其他',14],['退款',5]],
+      kb:['发货前修改地址','已发货拦截流程'],
+      pf:{spend:'¥5,430', orders:'11', csat:'4.4', vip:'VIP1'},
+      msgs:[
+        {r:'cust', t:'地址填错了，能改吗？还没发货的话麻烦帮我改一下', time:'10:21'},
+        {r:'me', t:'您好，我先帮您确认订单状态，如果还未出库可以为您修改地址。', time:'10:22'}
+      ]},
+    { id:'c6', name:'孙悦', ch:'APP', vip:'', wait:'1 分 58 秒', topic:'商品缺货什么时候补',
+      tag:'#库存', tagCls:'', sla:'SLA 剩 11 分', slaCls:'', tide:74,
+      flags:{follow:1}, conf:'0.66',
+      intent:[['物流',54],['其他',38],['退款',8]],
+      kb:['缺货补货周期','到货提醒设置'],
+      pf:{spend:'¥2,760', orders:'6', csat:'4.7', vip:'普通'},
+      msgs:[
+        {r:'cust', t:'看中的那款一直缺货，什么时候会补货呀？', time:'10:24'}
+      ]},
+    { id:'c7', name:'周锐', ch:'网页', vip:'VIP3', wait:'4 分 07 秒', topic:'退款迟迟未到账',
+      tag:'情绪转负', tagCls:'bad', sla:'SLA 剩 9 分', slaCls:'warn', tide:12,
+      flags:{mine:1}, conf:'0.28',
+      intent:[['退款',74],['其他',18],['物流',8]],
+      kb:['退款到账时效','银行处理周期说明'],
+      pf:{spend:'¥28,600', orders:'47', csat:'3.6', vip:'VIP3'},
+      msgs:[
+        {r:'cust', t:'退款申请通过好几天了，钱一直没到账，你们怎么处理事情的？', time:'10:15'},
+        {r:'me', t:'非常抱歉给您造成困扰，我立刻为您核实退款进度。', time:'10:16'},
+        {r:'cust', t:'已经说了好几次"核实"了，到底什么时候能到账', time:'10:19'}
+      ]},
+    { id:'c8', name:'何静', ch:'微信', vip:'', wait:'2 分 32 秒', topic:'会员价没生效',
+      tag:'#会员', tagCls:'', sla:'SLA 剩 15 分', slaCls:'', tide:63,
+      flags:{ai:1}, conf:'0.55',
+      intent:[['其他',58],['退款',27],['物流',15]],
+      kb:['会员权益说明','会员价未生效排查'],
+      pf:{spend:'¥16,900', orders:'31', csat:'4.5', vip:'VIP2'},
+      msgs:[
+        {r:'sys', t:'AI 置信度 0.55，已转人工复核'},
+        {r:'cust', t:'我是会员，为什么下单没有会员价？', time:'10:23'}
+      ]},
+    { id:'c9', name:'郑楠', ch:'网页', vip:'', wait:'1 分 05 秒', topic:'发票要开公司抬头',
+      tag:'待回访', tagCls:'warn', sla:'SLA 剩 20 分', slaCls:'', tide:91,
+      flags:{follow:1}, conf:'0.81',
+      intent:[['其他',69],['退款',19],['物流',12]],
+      kb:['企业发票开票指引'],
+      pf:{spend:'¥22,300', orders:'38', csat:'4.8', vip:'VIP2'},
+      msgs:[
+        {r:'cust', t:'需要开公司抬头的专票，资料已经上传了', time:'10:26'}
+      ]},
+    { id:'c10', name:'吴桐', ch:'APP', vip:'', wait:'56 秒', topic:'续费后权益未刷新',
+      tag:'#订阅', tagCls:'', sla:'SLA 剩 22 分', slaCls:'', tide:93,
+      flags:{follow:1}, conf:'0.74',
+      intent:[['其他',64],['退款',24],['物流',12]],
+      kb:['订阅续费说明','权益刷新机制'],
+      pf:{spend:'¥9,880', orders:'19', csat:'4.7', vip:'VIP1'},
+      msgs:[
+        {r:'cust', t:'刚续费了，会员权益怎么还没刷新？', time:'10:27'}
+      ]},
+    { id:'c11', name:'邓颖', ch:'网页', vip:'', wait:'2 分 46 秒', topic:'以旧换新补贴没到',
+      tag:'#以旧换新', tagCls:'', sla:'SLA 剩 8 分', slaCls:'warn', tide:55,
+      flags:{follow:1}, conf:'0.59',
+      intent:[['退款',52],['其他',36],['物流',12]],
+      kb:['以旧换新补贴规则','补贴发放进度'],
+      pf:{spend:'¥14,200', orders:'26', csat:'4.3', vip:'VIP2'},
+      msgs:[
+        {r:'cust', t:'参加以旧换新，说好的补贴怎么还没到账？', time:'10:22'}
+      ]},
+    { id:'c12', name:'马琳', ch:'微信', vip:'', wait:'48 秒', topic:'开发票要抬头发票专用',
+      tag:'#发票', tagCls:'', sla:'SLA 剩 25 分', slaCls:'', tide:95,
+      flags:{ai:1}, conf:'0.83',
+      intent:[['其他',77],['退款',15],['物流',8]],
+      kb:['发票抬头填写规范'],
+      pf:{spend:'¥6,540', orders:'13', csat:'4.9', vip:'VIP1'},
+      msgs:[
+        {r:'sys', t:'AI 置信度 0.83，建议直接采用推荐话术'},
+        {r:'cust', t:'发票抬头要写"发票专用"四个字吗？', time:'10:28'}
+      ]}
+  ];
+
+  var NAV = [
+    {id:'workbench', icon:'workbench', label:'坐席工作台', num:'01', on:true},
+    {id:'ai',        icon:'ai',        label:'AI 控制台',   num:'02'},
+    {id:'board',     icon:'board',     label:'主管看板',    num:'03'},
+    {id:'kb',        icon:'book',      label:'知识库文档',  num:'04'},
+    {id:'route',     icon:'route',     label:'意图与路由',  num:'05'},
+    {id:'setting',   icon:'gear',      label:'设置',        num:'06'}
+  ];
+
+  var TABS = [
+    {id:'all',    label:'全部'},
+    {id:'mine',   label:'需我处理'},
+    {id:'ai',     label:'AI 转人工'},
+    {id:'follow', label:'待跟进'}
+  ];
+
+  var QUICK = ['您好，很高兴为您服务～', '请稍等，我马上为您查询', '非常抱歉给您带来不便',
+               '已为您登记，24 小时内回复', '感谢您的理解与支持'];
+
+  /* ============ DOM ============ */
+  var $ = function (id) { return document.getElementById(id); };
+  var cardsEl = $('cards'), threadEl = $('thread'), chatHeadEl = $('chatHead');
+
+  var current = null;   // 当前选中客户
+  var tab = 'all';
+  var aiOn = true;
+  var draftMsg = null;  // 当前 AI 草稿
+
+  /* ============ 工具 ============ */
+  function toast(text) {
+    var el = $('toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.classList.remove('show'); }, 2200);
+  }
+
+  function tideLevel(v) { return v >= 75 ? 'ok' : (v >= 40 ? 'warn' : 'bad'); }
+  function tideText(v, name) {
+    if (v >= 75) return '情绪平稳，可正常沟通';
+    if (v >= 40) return '略有关注，建议主动安抚';
+    return '情绪转负，建议优先安抚并尽快给出方案';
+  }
+  function nowTime() {
+    var d = new Date(), p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  /* ============ 渲染：侧栏 ============ */
+  function renderNav() {
+    setIcon($('brandMark'), 'logo');
+    setIcon($('searchIcon'), 'search');
+    setIcon($('modeIcon'), 'ai');
+
+    var list = $('navList');
+    list.innerHTML = '';
+    NAV.forEach(function (item) {
+      var btn = document.createElement('button');
+      btn.className = 'nav-item' + (item.on ? ' active' : '');
+      btn.type = 'button';
+
+      var ic = document.createElement('span');
+      setIcon(ic, item.icon);
+      btn.appendChild(ic);
+
+      var lb = document.createElement('span');
+      lb.textContent = item.label;      // textContent 防注入
+      btn.appendChild(lb);
+
+      var nm = document.createElement('span');
+      nm.className = 'num';
+      nm.textContent = item.num;
+      btn.appendChild(nm);
+
+      btn.addEventListener('click', function () {
+        if (item.on) { toast('已在「' + item.label + '」'); return; }
+        toast('「' + item.label + '」在设计稿中未展开，Demo 仅实现坐席工作台');
+      });
+      list.appendChild(btn);
+    });
+  }
+
+  /* ============ 渲染：队列 ============ */
+  function visibleList() {
+    if (tab === 'all') return CUSTOMERS;
+    return CUSTOMERS.filter(function (c) { return c.flags[tab]; });
+  }
+
+  function renderTabs() {
+    var el = $('tabs');
+    el.innerHTML = '';
+    TABS.forEach(function (t) {
+      var b = document.createElement('button');
+      b.className = 'tab' + (tab === t.id ? ' active' : '');
+      b.type = 'button';
+
+      var label = document.createElement('span');
+      label.textContent = t.label;
+      b.appendChild(label);
+
+      var cnt = document.createElement('span');
+      cnt.className = 'cnt';
+      cnt.textContent = t.id === 'all'
+        ? String(CUSTOMERS.length)
+        : String(CUSTOMERS.filter(function (c) { return c.flags[t.id]; }).length);
+      b.appendChild(cnt);
+
+      b.addEventListener('click', function () { tab = t.id; renderTabs(); renderCards(); });
+      el.appendChild(b);
+    });
+  }
+
+  function renderCards() {
+    cardsEl.innerHTML = '';
+    var list = visibleList();
+    if (!list.length) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'padding:28px 14px;text-align:center;color:#8A9299;font-size:12px';
+      empty.textContent = '该分组下暂无会话';
+      cardsEl.appendChild(empty);
+      return;
+    }
+
+    list.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'card' + (current && current.id === c.id ? ' active' : '');
+      card.dataset.id = c.id;
+
+      var av = document.createElement('div');
+      av.className = 'card-avatar';
+      av.textContent = c.name.charAt(0);
+      card.appendChild(av);
+
+      var body = document.createElement('div');
+      body.className = 'card-body';
+
+      var row = document.createElement('div');
+      row.className = 'card-row';
+      var nm = document.createElement('span');
+      nm.className = 'card-name';
+      nm.textContent = c.name;
+      var wt = document.createElement('span');
+      wt.className = 'card-wait';
+      wt.textContent = '等待 ' + c.wait;
+      row.appendChild(nm); row.appendChild(wt);
+      body.appendChild(row);
+
+      var tp = document.createElement('div');
+      tp.className = 'card-topic';
+      tp.textContent = c.topic;
+      body.appendChild(tp);
+
+      var meta = document.createElement('div');
+      meta.className = 'card-meta';
+
+      var tg = document.createElement('span');
+      tg.className = 'tag' + (c.tagCls ? ' ' + c.tagCls : '');
+      tg.textContent = c.tag;
+      meta.appendChild(tg);
+
+      var sla = document.createElement('span');
+      sla.className = 'sla' + (c.slaCls ? ' ' + c.slaCls : '');
+      sla.textContent = c.sla;
+      meta.appendChild(sla);
+
+      var td = document.createElement('div');
+      td.className = 'tide';
+      var tdl = document.createElement('span');
+      tdl.textContent = '潮位 ' + c.tide + '%';
+      var bar = document.createElement('div');
+      bar.className = 'tide-bar';
+      var fill = document.createElement('i');
+      fill.className = tideLevel(c.tide);
+      fill.style.width = c.tide + '%';
+      bar.appendChild(fill);
+      td.appendChild(tdl); td.appendChild(bar);
+      meta.appendChild(td);
+
+      body.appendChild(meta);
+      card.appendChild(body);
+
+      card.addEventListener('click', function () { select(c.id); });
+      cardsEl.appendChild(card);
+    });
+  }
+
+  /* ============ 渲染：聊天区 ============ */
+  function renderHead() {
+    chatHeadEl.innerHTML = '';
+    if (!current) {
+      chatHeadEl.innerHTML = '';
+      return;
+    }
+    var av = document.createElement('div');
+    av.className = 'card-avatar';
+    av.textContent = current.name.charAt(0);
+    chatHeadEl.appendChild(av);
+
+    var who = document.createElement('div');
+    who.className = 'who';
+    var b = document.createElement('b');
+    b.textContent = current.name;
+    who.appendChild(b);
+    if (current.vip) {
+      var v = document.createElement('span');
+      v.className = 'vip';
+      v.textContent = current.vip;
+      who.appendChild(v);
+    }
+    var sm = document.createElement('small');
+    var ch = document.createElement('span');
+    ch.textContent = '渠道 ' + current.ch;
+    var od = document.createElement('span');
+    od.textContent = '订单 ' + current.pf.orders + ' 笔';
+    var wt = document.createElement('span');
+    wt.textContent = '等待 ' + current.wait;
+    sm.appendChild(ch); sm.appendChild(od); sm.appendChild(wt);
+    who.appendChild(sm);
+    chatHeadEl.appendChild(who);
+
+    var spacer = document.createElement('div');
+    spacer.className = 'spacer';
+    chatHeadEl.appendChild(spacer);
+
+    var btn = document.createElement('button');
+    btn.className = 'btn-ghost';
+    btn.type = 'button';
+    btn.textContent = '历史订单';
+    btn.addEventListener('click', function () {
+      toast('历史订单面板在设计稿中未展开');
+    });
+    chatHeadEl.appendChild(btn);
+  }
+
+  function renderThread() {
+    threadEl.innerHTML = '';
+    if (!current) {
+      threadEl.className = 'thread';
+      var wrap = document.createElement('div');
+      wrap.className = 'empty-chat';
+      var inner = document.createElement('div');
+      inner.className = 'in';
+      var ic = document.createElement('div');
+      setIcon(ic, 'chat');
+      inner.appendChild(ic);
+      var p = document.createElement('p');
+      p.textContent = '从左侧队列选择一个会话开始接待';
+      inner.appendChild(p);
+      wrap.appendChild(inner);
+      threadEl.appendChild(wrap);
+      return;
+    }
+
+    var sep = document.createElement('div');
+    sep.className = 'sep';
+    var sp = document.createElement('span');
+    sp.textContent = '今天';
+    sep.appendChild(sp);
+    threadEl.appendChild(sep);
+
+    current.msgs.forEach(function (m) { threadEl.appendChild(buildMsg(m)); });
+    if (draftMsg) threadEl.appendChild(buildDraft(draftMsg));
+    threadEl.scrollTop = threadEl.scrollHeight;
+  }
+
+  function buildMsg(m) {
+    if (m.r === 'sys') {
+      var s = document.createElement('div');
+      s.className = 'sys-msg';
+      s.textContent = m.t;   // textContent：后端/用户输入一律纯文本
+      return s;
+    }
+    var row = document.createElement('div');
+    row.className = 'msg' + (m.r === 'me' ? ' me' : '');
+
+    var av = document.createElement('div');
+    av.className = 'msg-avatar';
+    av.textContent = m.r === 'me' ? '周' : (current ? current.name.charAt(0) : '客');
+    row.appendChild(av);
+
+    var col = document.createElement('div');
+    col.className = 'msg-col';
+
+    var bub = document.createElement('div');
+    bub.className = 'bubble';
+    bub.textContent = m.t;
+    col.appendChild(bub);
+
+    var mt = document.createElement('div');
+    mt.className = 'msg-meta';
+    mt.textContent = m.time || nowTime();
+    col.appendChild(mt);
+
+    row.appendChild(col);
+    return row;
+  }
+
+  function buildDraft(text) {
+    var row = document.createElement('div');
+    row.className = 'msg me';
+
+    var av = document.createElement('div');
+    av.className = 'msg-avatar';
+    av.textContent = '周';
+    row.appendChild(av);
+
+    var col = document.createElement('div');
+    col.className = 'msg-col';
+
+    var bub = document.createElement('div');
+    bub.className = 'bubble draft';
+
+    var lab = document.createElement('div');
+    lab.className = 'draft-label';
+    var li = document.createElement('span');
+    setIcon(li, 'spark');
+    lab.appendChild(li);
+    lab.appendChild(document.createTextNode('AI 草稿 · 待确认'));
+    bub.appendChild(lab);
+
+    var body = document.createElement('div');
+    body.textContent = text;
+    bub.appendChild(body);
+
+    var acts = document.createElement('div');
+    acts.className = 'draft-actions';
+
+    var ok = document.createElement('button');
+    ok.className = 'primary';
+    ok.type = 'button';
+    ok.textContent = '采用并发送';
+    ok.addEventListener('click', function () { adoptDraft(text); });
+
+    var redo = document.createElement('button');
+    redo.type = 'button';
+    redo.textContent = '重新生成';
+    redo.addEventListener('click', function () { requestDraft(); });
+
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.textContent = '放弃';
+    no.addEventListener('click', function () { draftMsg = null; renderThread(); });
+
+    acts.appendChild(ok); acts.appendChild(redo); acts.appendChild(no);
+    bub.appendChild(acts);
+    col.appendChild(bub);
+    row.appendChild(col);
+    return row;
+  }
+
+  /* ============ 选中客户 ============ */
+  function select(id) {
+    var c = CUSTOMERS.filter(function (x) { return x.id === id; })[0];
+    if (!c) return;
+    current = c;
+    draftMsg = null;
+    renderCards();
+    renderHead();
+    renderThread();
+    renderAI();
+    $('replyInput').focus();
+  }
+
+  /* ============ AI 面板 ============ */
+  function renderAI() {
+    setIcon($('aiHeadIcon'), 'spark');
+    setIcon($('tAi'), 'spark');
+    setIcon($('tEmoji'), 'smile');
+    setIcon($('tVar'), 'braces');
+    setIcon($('tFile'), 'clip');
+    setIcon($('tOrder'), 'cart');
+
+    $('aiConf').textContent = current ? ('置信度 ' + current.conf) : '';
+
+    var il = $('intentList');
+    il.innerHTML = '';
+    if (!current) {
+      il.innerHTML = '<div style="font-size:12px;color:#8A9299">选择会话后显示意图分布</div>';
+      $('kbList').innerHTML = '';
+      $('profileGrid').innerHTML = '';
+      $('tideNum').textContent = '—';
+      $('tideBar').style.width = '0%';
+      $('tideTxt').textContent = '';
+      return;
+    }
+
+    current.intent.forEach(function (pair, i) {
+      var row = document.createElement('div');
+      row.className = 'intent-row' + (i === 0 ? ' top1' : '');
+      var top = document.createElement('div');
+      top.className = 'top';
+      var b = document.createElement('b');
+      b.textContent = pair[0];
+      var s = document.createElement('span');
+      s.textContent = pair[1] + '%';
+      top.appendChild(b); top.appendChild(s);
+      var bar = document.createElement('div');
+      bar.className = 'bar';
+      var fill = document.createElement('i');
+      fill.style.width = pair[1] + '%';
+      bar.appendChild(fill);
+      row.appendChild(top); row.appendChild(bar);
+      il.appendChild(row);
+    });
+
+    var kl = $('kbList');
+    kl.innerHTML = '';
+    current.kb.forEach(function (title) {
+      var item = document.createElement('div');
+      item.className = 'kb-item';
+      var t = document.createElement('div');
+      t.className = 'txt';
+      t.textContent = title;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = '发送';
+      btn.addEventListener('click', function () {
+        var input = $('replyInput');
+        input.value = input.value ? (input.value + '\n' + title) : title;
+        input.focus();
+        toast('已插入推荐话术');
+      });
+      item.appendChild(t); item.appendChild(btn);
+      kl.appendChild(item);
+    });
+
+    var pg = $('profileGrid');
+    pg.innerHTML = '';
+    [['累计消费', current.pf.spend], ['订单数', current.pf.orders],
+     ['满意度', current.pf.csat], ['等级', current.pf.vip]].forEach(function (kv) {
+      var d = document.createElement('div');
+      d.className = 'pf';
+      var k = document.createElement('div');
+      k.className = 'k';
+      k.textContent = kv[0];
+      var v = document.createElement('div');
+      v.className = 'v';
+      v.textContent = kv[1];
+      d.appendChild(k); d.appendChild(v);
+      pg.appendChild(d);
+    });
+
+    var lv = tideLevel(current.tide);
+    var num = $('tideNum');
+    num.textContent = current.tide + '%';
+    num.className = 'gauge-num ' + lv;
+    var bar = $('tideBar');
+    bar.style.width = current.tide + '%';
+    bar.style.background = lv === 'ok' ? '#0A6A46' : (lv === 'warn' ? '#D9830F' : '#AD2634');
+    $('tideTxt').textContent = tideText(current.tide);
+  }
+
+  /* ============ 发送 ============ */
+  function sendReply() {
+    if (!current) { toast('请先选择一个会话'); return; }
+    var input = $('replyInput');
+    var text = input.value.trim();
+    if (!text) return;
+
+    current.msgs.push({ r: 'me', t: text, time: nowTime() });
+    input.value = '';
+    draftMsg = null;
+    renderThread();
+  }
+
+  /* ============ AI 续写（真实调用后端） ============ */
+  var busy = false, controller = null;
+
+  function requestDraft() {
+    if (!current) { toast('请先选择一个会话'); return; }
+    if (busy) return;
+    if (!aiOn) { toast('AI 辅助已关闭'); return; }
+
+    // 取客户最后一条消息作为提问
+    var last = null;
+    for (var i = current.msgs.length - 1; i >= 0; i--) {
+      if (current.msgs[i].r === 'cust') { last = current.msgs[i].t; break; }
+    }
+    if (!last) { toast('该会话暂无客户消息'); return; }
+
+    busy = true;
+    var btn = $('aiDraft');
+    btn.disabled = true;
+    var oldLabel = btn.lastChild.textContent;
+    btn.lastChild.textContent = '生成中…';
+
+    controller = new AbortController();
+    var timer = setTimeout(function () { if (controller) controller.abort(); }, REQUEST_TIMEOUT);
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: last, session_id: current.id }),
+      signal: controller.signal
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        draftMsg = data.reply || data.answer || '（后端未返回内容）';
+        if (data.need_human) {
+          toast('AI 建议转人工处理');
+        }
+        renderThread();
+      })
+      .catch(function (err) {
+        var isAbort = err && (err.name === 'AbortError' || /abort/i.test(err.message || ''));
+        toast(isAbort ? 'AI 生成超时，请重试'
+                      : '无法连接后端（localhost:8000），请先启动服务');
+      })
+      .then(function () {
+        clearTimeout(timer);
+        controller = null;
+        busy = false;
+        btn.disabled = false;
+        btn.lastChild.textContent = 'AI 续写';
+      });
+  }
+
+  function adoptDraft(text) {
+    if (!current) return;
+    current.msgs.push({ r: 'me', t: text, time: nowTime() });
+    draftMsg = null;
+    renderThread();
+    toast('已发送 AI 草稿');
+  }
+
+  /* ============ 快捷操作 ============ */
+  document.querySelectorAll('.actions button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var act = b.dataset.act;
+      if (!current) { toast('请先选择一个会话'); return; }
+      if (act === 'human') {
+        current.msgs.push({ r: 'sys', t: '已转接人工客服，等待专员接入' });
+        renderThread();
+        toast('已转接人工客服');
+      } else if (act === 'ticket') {
+        toast('工单已创建（Demo）');
+      } else if (act === 'resolve') {
+        var idx = CUSTOMERS.indexOf(current);
+        if (idx >= 0) CUSTOMERS.splice(idx, 1);
+        current = null;
+        draftMsg = null;
+        renderCards(); renderTabs(); renderHead(); renderThread(); renderAI();
+        toast('会话已标记解决');
+      }
+    });
+  });
+
+  /* ============ 输入区事件 ============ */
+  var input = $('replyInput');
+  input.addEventListener('keydown', function (e) {
+    // isComposing：中文输入法选词确认时按 Enter 会误发送
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      sendReply();
+    }
+  });
+  $('btnSend').addEventListener('click', sendReply);
+  $('aiDraft').addEventListener('click', requestDraft);
+
+  // 工具条
+  document.querySelectorAll('.tool[data-act]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var map = { emoji: '表情面板（Demo）', 'var': '变量插入（Demo）',
+                  file: '附件上传（Demo）', order: '订单卡片（Demo）' };
+      toast(map[b.dataset.act] || '功能演示');
+    });
+  });
+
+  // 快捷话术
+  var qEl = $('quick');
+  QUICK.forEach(function (q) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = q;
+    b.addEventListener('click', function () {
+      input.value = input.value ? input.value + '\n' + q : q;
+      input.focus();
+    });
+    qEl.appendChild(b);
+  });
+
+  // AI 开关
+  $('aiToggle').addEventListener('click', function () {
+    aiOn = !aiOn;
+    this.classList.toggle('on', aiOn);
+    toast(aiOn ? 'AI 辅助已开启' : 'AI 辅助已关闭');
+  });
+
+  // 搜索快捷键
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' &&
+        document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      $('globalSearch').focus();
+    }
+  });
+
+  /* ============ 初始化 ============ */
+  renderNav();
+  renderTabs();
+  renderCards();
+  renderHead();
+  renderThread();
+  renderAI();
+  select('c1');   // 默认选中第一个会话，避免空屏
+})();
+</script>
+</body>
+</html>

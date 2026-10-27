@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  agent-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL}
+      - CHROMA_DIR=/app/chroma_db
+    volumes:
+      - ./chroma_db:/app/chroma_db
+    restart: unless-stopped
+    # 容器内没有 curl，用 python 探活；失败不 health 时 docker compose ps 会标 unhealthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

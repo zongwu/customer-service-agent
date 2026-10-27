@@ -1,0 +1,20 @@
+{
+  "include": ["rag", "agent", "api", "tests"],
+  "exclude": ["**/__pycache__", ".venv", "chroma_db"],
+
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+
+  "reportMissingTypeStubs": "none",
+  "reportDeprecated": "warning",
+
+  "reportOptionalMemberAccess": "warning",
+  "reportOptionalSubscript": "warning",
+  "reportOptionalCall": "warning",
+
+  "reportUnnecessaryTypeIgnoreComment": "none",
+  "reportPrivateUsage": "none",
+
+  "strictListInference": true,
+  "strictSetInference": true
+}

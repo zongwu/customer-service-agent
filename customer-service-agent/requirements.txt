@@ -1,0 +1,29 @@
+# Web 检索与嵌入
+langchain
+# langchain-community 已宣布 sunset，仅作兼容兜底；Embedding 优先走 langchain-huggingface
+langchain-community
+langchain-huggingface
+langchain-chroma
+chromadb
+sentence-transformers
+jieba
+rank-bm25
+transformers
+# 本地开发若被安全软件拦截或需减小体积，可改装 CPU 版：
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch
+
+# Agent 编排
+langgraph
+langchain-openai
+
+# 服务
+fastapi
+uvicorn
+python-dotenv
+pydantic
+openai
+
+# 开发工具（可选）
+# pytest
+# pyright
