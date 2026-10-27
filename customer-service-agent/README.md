@@ -1,6 +1,6 @@
 # 客服 Agent Demo
 
-> 基于 **Chroma + LangGraph + FastAPI + DeepSeek** 的中文客服 Agent Demo。
+> 基于 **Chroma + LangGraph + FastAPI + DeepSeek** 的中文客服 Agent 。
 > 用混合检索（BGE 向量 + BM25 + RRF 融合 + Cross-Encoder 重排）召回知识库片段，
 > 交给 DeepSeek 生成口语化回答；意图不明或知识库无解时自动转人工。
 > 附带客户端聊天页与坐席工作台两个前端，支持 Docker 一键部署。
